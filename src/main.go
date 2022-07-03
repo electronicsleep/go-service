@@ -63,7 +63,7 @@ func checkError(info string, err error) {
 
 func apiHandler(w http.ResponseWriter, r *http.Request) {
 	profile := Profile{Name: "Chris", Hobbies: []string{"Bass", "Programming"}}
-	log.Println("info: ", profile)
+	log.Println("INFO: api ", profile)
 
 	js, err := json.Marshal(profile)
 	if err != nil {
@@ -78,7 +78,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	health := Health{Status: "up"}
-	log.Println("info: ", health)
+	log.Println("INFO: status ", health)
 
 	js, err := json.Marshal(health)
 	if err != nil {
@@ -108,6 +108,7 @@ func eventAddHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("INFO" + message)
 		return
 	}
+
 	type Event struct {
 		Event     string
 		Service   string
@@ -120,7 +121,7 @@ func eventAddHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var e Event
 	err := decoder.Decode(&e)
-	log.Println("INFO: e ", e)
+	log.Println("INFO: event ", e)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -151,7 +152,7 @@ func eventAddHandler(w http.ResponseWriter, r *http.Request) {
 			insertResult = InsertEvent(e.Service, e.Event, e.EventType, e.Datetime)
 		}
 		fmt.Fprintf(w, "Add Event: %s Result: %s", e.Event, insertResult)
-		fmt.Fprintf(w, "Add Event: #{e.Event} Result: #{insertResult}")
+		//fmt.Fprintf(w, "Add Event: #{e.Event} Result: #{insertResult}")
 		message = "Add Event: " + serviceMessage + " Event " + e.Event + dateTimeMessage
 		log.Println("INFO:", message)
 	}

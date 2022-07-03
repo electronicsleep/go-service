@@ -75,8 +75,8 @@ func OpenDBRoConn(readerDatasource string, datasourcePassword string) bool {
 }
 
 func GetAllEvents() string {
+	log.Println("INFO: GetAllEvents")
 	var errStr = ""
-	log.Println("GetAllEvents")
 
 	results, err := dbRo.Query("SELECT * FROM events order by datetime desc")
 	if err != nil {
@@ -117,22 +117,23 @@ func GetAllEvents() string {
 	if err != nil {
 		return "Error: json.Marshal"
 	}
-	//fmt.Println(string(jsonData))
 	return string(jsonData)
 }
 
 func InsertEvent(service string, event string, eventType string, datetime string) string {
+	log.Println("INFO: InsertEvent")
 	var errStr = ""
 	query := "SELECT COUNT(*) as count FROM events WHERE service = ? and event = ? and event_type = ? and datetime = ?"
 	results, err := db.Query(query, service, event, eventType, datetime)
+	log.Println("INFO:", results)
 	numRows := checkCount(results)
-	log.Println("numRows:", numRows)
+	log.Println("INFO: numRows:", numRows)
 	if numRows != 0 {
 		log.Println("INFO: found duplicate not inserting")
 		return "duplicate"
 	}
 
-	query = "INSERT INTO events (service, event, eventType, datetime) values (?, ?, ?, ?)"
+	query = "INSERT INTO events (service, event, event_type, datetime) values (?, ?, ?, ?)"
 	result, err := db.Exec(query, service, event, eventType, datetime)
 
 	if err != nil {
@@ -142,13 +143,13 @@ func InsertEvent(service string, event string, eventType string, datetime string
 		return errStr
 	}
 	print(result)
-	log.Println("result: ", result)
+	log.Println("INFO: result: ", result)
 	return "ok"
 }
 
 func InsertEventNow(service string, event string, eventType string) string {
+	log.Println("INFO: InsertEventNow")
 	var errStr = ""
-	log.Println("InsertEventNow")
 	query := "INSERT INTO events (service, event, event_type, datetime) values (?, ?, ?, NOW())"
 	result, err := db.Exec(query, service, event, eventType)
 	if err != nil {
@@ -157,6 +158,6 @@ func InsertEventNow(service string, event string, eventType string) string {
 		log.Println(err)
 		return errStr
 	}
-	log.Println("result: ", result)
+	log.Println("INFO: result: ", result)
 	return "ok"
 }
