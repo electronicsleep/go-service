@@ -24,14 +24,6 @@ var db *sql.DB
 var dbRo *sql.DB
 var dbConnErr error
 
-func checkCount(rows *sql.Rows) (count int) {
-	for rows.Next() {
-		err := rows.Scan(&count)
-		checkErr(err)
-	}
-	return count
-}
-
 func checkErr(err error) {
 	if err != nil {
 		panic(err)
@@ -51,7 +43,7 @@ func OpenDBConn(writerDatasource string, datasourcePassword string) bool {
 		log.Println(dbConnErr)
 		return false
 	} else {
-		log.Println("Opened DB Connection")
+		log.Println("INFO: Opened DB Connection")
 		return true
 	}
 }
@@ -69,7 +61,7 @@ func OpenDBRoConn(readerDatasource string, datasourcePassword string) bool {
 		log.Println(dbConnErr)
 		return false
 	} else {
-		log.Println("Opened DB Ro Connection")
+		log.Println("INFO: Opened DB Ro Connection")
 		return true
 	}
 }
@@ -118,6 +110,14 @@ func GetAllEvents() string {
 		return "Error: json.Marshal"
 	}
 	return string(jsonData)
+}
+
+func checkCount(rows *sql.Rows) (count int) {
+	for rows.Next() {
+		err := rows.Scan(&count)
+		checkErr(err)
+	}
+	return count
 }
 
 func InsertEvent(service string, event string, eventType string, datetime string) string {

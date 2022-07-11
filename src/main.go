@@ -22,7 +22,7 @@ var readerDatasource = ""
 var datasourcePassword = ""
 
 func init() {
-	log.Println("Init..")
+	log.Println("INFO: Init..")
 
 	envVar := "writerDatasource"
 	writerDatasource := os.Getenv(envVar)
@@ -51,7 +51,7 @@ func init() {
 	log.Println("INFO: Setup DB connection pools")
 	OpenDBConn(writerDatasource, datasourcePassword)
 	OpenDBRoConn(readerDatasource, datasourcePassword)
-	log.Println("Done init")
+	log.Println("INFO: Done init")
 }
 
 func checkError(info string, err error) {
@@ -92,7 +92,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func eventsHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("INFO eventsHandler endpoint")
+	log.Println("INFO: eventsHandler endpoint")
 	dbStatusResponse := ""
 	dbStatusResponse = GetAllEvents()
 	w.Header().Set("Content-Type", "application/json")
@@ -183,6 +183,6 @@ func main() {
 
 	port := "8080"
 	log.Println("Listening...")
-	log.Println("http://localhost:" + port)
+	log.Println("Server: http://localhost:" + port)
 	http.ListenAndServe(":"+port, nil)
 }
