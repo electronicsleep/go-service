@@ -182,7 +182,7 @@ func main() {
 	http.Handle("/", charts)
 
 	port := "8080"
-	log.Println("Listening...")
-	log.Println("Server: http://localhost:" + port)
+	log.Println("INFO: Listening...")
+	log.Println("INFO: Server: http://localhost:" + port)
 	http.ListenAndServe(":"+port, nil)
 }
