@@ -78,34 +78,22 @@ func GetAllEvents() string {
 		return errStr
 	}
 	defer results.Close()
-	columns, err := results.Columns()
-	if err != nil {
-		return "Error: columns"
-	}
-	count := len(columns)
-	tableData := make([]map[string]interface{}, 0)
-	values := make([]interface{}, count)
-	valuePtrs := make([]interface{}, count)
+	numEvents := 0
+	var eventsList []EventsTable
+	var events EventsTable
 	for results.Next() {
-		for i := 0; i < count; i++ {
-			valuePtrs[i] = &values[i]
+		err = results.Scan(&events.EventId, &events.Service, &events.Event, &events.EventType, &events.Datetime)
+		if err != nil {
+			errStr = "ERROR: DB Select events result issue"
+			log.Println(errStr)
+			log.Println(err)
+			return errStr
 		}
-		results.Scan(valuePtrs...)
-		entry := make(map[string]interface{})
-		for i, col := range columns {
-			var v interface{}
-			val := values[i]
-			b, ok := val.([]byte)
-			if ok {
-				v = string(b)
-			} else {
-				v = val
-			}
-			entry[col] = v
-		}
-		tableData = append(tableData, entry)
+		eventsList = append(eventsList, events)
+		numEvents += 1
 	}
-	jsonData, err := json.Marshal(tableData)
+	//log.Println("DEBUG: Marshal", eventsList)
+	jsonData, err := json.Marshal(eventsList)
 	if err != nil {
 		return "Error: json.Marshal"
 	}

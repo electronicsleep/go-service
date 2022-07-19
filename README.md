@@ -1,6 +1,8 @@
 # go-service
 
-Example microservice in Go
+Example service in Go
+
+The service inserts into an Event database based on timestamp with event name and event type
 
 Run Database
 ```

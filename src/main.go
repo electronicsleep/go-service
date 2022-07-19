@@ -177,9 +177,9 @@ func main() {
 	api := http.HandlerFunc(apiHandler)
 	http.Handle("/api", api)
 
-	charts := http.HandlerFunc(statusHandler)
-	http.Handle("/status", charts)
-	http.Handle("/", charts)
+	status := http.HandlerFunc(statusHandler)
+	http.Handle("/status", status)
+	http.Handle("/", status)
 
 	port := "8080"
 	log.Println("INFO: Listening...")
