@@ -65,7 +65,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	profile := Profile{Name: "Chris", Hobbies: []string{"Bass", "Programming"}}
 	log.Println("INFO: api ", profile)
 
-	js, err := json.Marshal(profile)
+	jsonData, err := json.Marshal(profile)
 	if err != nil {
 		log.Println("ERROR: Marshal apiHandler")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -73,14 +73,14 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	w.Write(jsonData)
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	health := Health{Status: "up"}
 	log.Println("INFO: status ", health)
 
-	js, err := json.Marshal(health)
+	jsonData, err := json.Marshal(health)
 	if err != nil {
 		log.Println("ERROR: Marshal healthHandler")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -88,7 +88,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	w.Write(jsonData)
 }
 
 func eventsHandler(w http.ResponseWriter, r *http.Request) {
@@ -151,8 +151,7 @@ func eventAddHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			insertResult = InsertEvent(e.Service, e.Event, e.EventType, e.Datetime)
 		}
-		fmt.Fprintf(w, "Add Event: %s Result: %s", e.Event, insertResult)
-		//fmt.Fprintf(w, "Add Event: #{e.Event} Result: #{insertResult}")
+		fmt.Fprintf(w, "INFO: Add Event: %s Result: %s", e.Event, insertResult)
 		message = "Add Event: " + serviceMessage + " Event " + e.Event + dateTimeMessage
 		log.Println("INFO:", message)
 	}

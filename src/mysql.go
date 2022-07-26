@@ -38,11 +38,15 @@ func OpenDBConn(writerDatasource string, datasourcePassword string) bool {
 	db.SetConnMaxLifetime(connMaxLifetime)
 
 	if dbConnErr != nil {
-		errStr := "ERROR: DB connect issue"
+		errStr := "ERROR: DB open issue"
 		log.Println(errStr)
 		log.Println(dbConnErr)
 		return false
 	} else {
+		err := db.Ping()
+		if err != nil {
+			log.Println("ERROR: db.Ping failed:", err)
+		}
 		log.Println("INFO: Opened DB Connection")
 		return true
 	}
@@ -56,12 +60,16 @@ func OpenDBRoConn(readerDatasource string, datasourcePassword string) bool {
 	dbRo.SetConnMaxLifetime(connMaxLifetime)
 
 	if dbConnErr != nil {
-		errStr := "ERROR: DB Ro connect issue"
+		errStr := "ERROR: DBRo open issue"
 		log.Println(errStr)
 		log.Println(dbConnErr)
 		return false
 	} else {
-		log.Println("INFO: Opened DB Ro Connection")
+		err := dbRo.Ping()
+		if err != nil {
+			log.Println("ERROR: dbRo.Ping failed:", err)
+		}
+		log.Println("INFO: Opened DBRo Connection")
 		return true
 	}
 }
@@ -72,7 +80,7 @@ func GetAllEvents() string {
 
 	results, err := dbRo.Query("SELECT * FROM events order by datetime desc")
 	if err != nil {
-		errStr = "ERROR: DB Select events issue"
+		errStr = "ERROR: GetAllEvents: DB Select events issue"
 		log.Println(errStr)
 		log.Println(err)
 		return errStr
@@ -92,10 +100,11 @@ func GetAllEvents() string {
 		eventsList = append(eventsList, events)
 		numEvents += 1
 	}
+	//log.Println("DEBUG: numEvents", numEvents)
 	//log.Println("DEBUG: Marshal", eventsList)
 	jsonData, err := json.Marshal(eventsList)
 	if err != nil {
-		return "Error: json.Marshal"
+		return "ERROR: GetAllEvents: json.Marshal"
 	}
 	return string(jsonData)
 }
@@ -125,7 +134,7 @@ func InsertEvent(service string, event string, eventType string, datetime string
 	result, err := db.Exec(query, service, event, eventType, datetime)
 
 	if err != nil {
-		errStr = "ERROR: DB Insert events issue"
+		errStr = "ERROR: InsertEvent: DB Insert events issue"
 		log.Println(errStr)
 		log.Println(err)
 		return errStr
@@ -141,7 +150,7 @@ func InsertEventNow(service string, event string, eventType string) string {
 	query := "INSERT INTO events (service, event, event_type, datetime) values (?, ?, ?, NOW())"
 	result, err := db.Exec(query, service, event, eventType)
 	if err != nil {
-		errStr = "ERROR: DB Insert events issue"
+		errStr = "ERROR: InsertEventsNow: DB Insert events issue"
 		log.Println(errStr)
 		log.Println(err)
 		return errStr
