@@ -10,7 +10,7 @@ import (
 )
 
 type EventsTable struct {
-	EventId   int    `json:"event_id"`
+	EventId   string `json:"event_id"`
 	Service   string `json:"service"`
 	Event     string `json:"event"`
 	EventType string `json:"event_type"`
@@ -130,7 +130,7 @@ func InsertEvent(service string, event string, eventType string, datetime string
 		return "duplicate"
 	}
 
-	query = "INSERT INTO events (service, event, event_type, datetime) values (?, ?, ?, ?)"
+	query = "INSERT INTO events (event_id, service, event, event_type, datetime) values (UUID(), ?, ?, ?, ?)"
 	result, err := db.Exec(query, service, event, eventType, datetime)
 
 	if err != nil {
@@ -147,7 +147,7 @@ func InsertEvent(service string, event string, eventType string, datetime string
 func InsertEventNow(service string, event string, eventType string) string {
 	log.Println("INFO: InsertEventNow")
 	var errStr = ""
-	query := "INSERT INTO events (service, event, event_type, datetime) values (?, ?, ?, NOW())"
+	query := "INSERT INTO events (event_id, service, event, event_type, datetime) values (UUID(), ?, ?, ?, NOW())"
 	result, err := db.Exec(query, service, event, eventType)
 	if err != nil {
 		errStr = "ERROR: InsertEventsNow: DB Insert events issue"

@@ -15,3 +15,7 @@ Run
 ./run.sh
 ```
 
+Test
+```
+bash src/test/curl-tests.sh
+```
