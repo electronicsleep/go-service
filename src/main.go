@@ -17,6 +17,7 @@ type Health struct {
 	Status string `json:"status"`
 }
 
+var userDatasource = ""
 var writerDatasource = ""
 var readerDatasource = ""
 var datasourcePassword = ""
@@ -24,7 +25,15 @@ var datasourcePassword = ""
 func init() {
 	log.Println("INFO: Init..")
 
-	envVar := "writerDatasource"
+	envVar := "userDatasource"
+	userDatasource := os.Getenv(envVar)
+	if userDatasource != "" {
+		log.Println("INFO: envVar " + envVar + " set")
+	} else {
+		log.Println("ERROR: envVar " + envVar + " missing")
+	}
+
+	envVar = "writerDatasource"
 	writerDatasource := os.Getenv(envVar)
 	if writerDatasource != "" {
 		log.Println("INFO: envVar " + envVar + " set")
@@ -49,8 +58,8 @@ func init() {
 	}
 
 	log.Println("INFO: Setup DB connection pools")
-	OpenDBConn(writerDatasource, datasourcePassword)
-	OpenDBRoConn(readerDatasource, datasourcePassword)
+	OpenDBConn(userDatasource, writerDatasource, datasourcePassword)
+	OpenDBRoConn(userDatasource, readerDatasource, datasourcePassword)
 	log.Println("INFO: Done init")
 }
 

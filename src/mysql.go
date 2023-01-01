@@ -30,8 +30,8 @@ func checkErr(err error) {
 	}
 }
 
-func OpenDBConn(writerDatasource string, datasourcePassword string) bool {
-	dataSource := "infradb:" + datasourcePassword + "@tcp(" + writerDatasource + ":3306)/infradb"
+func OpenDBConn(userDatasource string, writerDatasource string, datasourcePassword string) bool {
+	dataSource := userDatasource + ":" + datasourcePassword + "@tcp(" + writerDatasource + ":3306)/infradb"
 	db, dbConnErr = sql.Open("mysql", dataSource)
 	db.SetMaxOpenConns(maxOpenConns)
 	db.SetMaxIdleConns(maxIdleConns)
@@ -52,8 +52,8 @@ func OpenDBConn(writerDatasource string, datasourcePassword string) bool {
 	}
 }
 
-func OpenDBRoConn(readerDatasource string, datasourcePassword string) bool {
-	dataSource := "infradb:" + datasourcePassword + "@tcp(" + readerDatasource + ":3306)/infradb"
+func OpenDBRoConn(userDatasource string, readerDatasource string, datasourcePassword string) bool {
+	dataSource := userDatasource + ":" + datasourcePassword + "@tcp(" + readerDatasource + ":3306)/infradb"
 	dbRo, dbConnErr = sql.Open("mysql", dataSource)
 	dbRo.SetMaxOpenConns(maxOpenConns)
 	dbRo.SetMaxIdleConns(maxIdleConns)
@@ -78,7 +78,7 @@ func GetAllEvents() string {
 	log.Println("INFO: GetAllEvents")
 	var errStr = ""
 
-	results, err := dbRo.Query("SELECT * FROM events order by datetime desc")
+	results, err := dbRo.Query("SELECT * FROM events ORDER BY datetime DESC LIMIT 100")
 	if err != nil {
 		errStr = "ERROR: GetAllEvents: DB Select events issue"
 		log.Println(errStr)
@@ -100,8 +100,6 @@ func GetAllEvents() string {
 		eventsList = append(eventsList, events)
 		numEvents += 1
 	}
-	//log.Println("DEBUG: numEvents", numEvents)
-	//log.Println("DEBUG: Marshal", eventsList)
 	jsonData, err := json.Marshal(eventsList)
 	if err != nil {
 		return "ERROR: GetAllEvents: json.Marshal"
