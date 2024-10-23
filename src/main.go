@@ -189,7 +189,7 @@ func main() {
 	http.Handle("/status", status)
 	http.Handle("/", status)
 
-	port := "8080"
+	port := "8081"
 	log.Println("INFO: Listening...")
 	log.Println("INFO: Server: http://localhost:" + port)
 	http.ListenAndServe(":"+port, nil)
