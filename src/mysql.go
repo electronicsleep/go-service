@@ -26,7 +26,8 @@ var dbConnErr error
 
 func checkErr(err error) {
 	if err != nil {
-		panic(err)
+		errStr := "ERROR: Issue connecting to the database"
+		log.Printf("%s: %v\n", errStr, err)
 	}
 }
 
@@ -74,16 +75,15 @@ func OpenDBRoConn(userDatasource string, readerDatasource string, datasourcePass
 	}
 }
 
-func GetAllEvents() string {
+func GetAllEvents() (string, error) {
 	log.Println("INFO: GetAllEvents")
 	var errStr = ""
 
 	results, err := dbRo.Query("SELECT * FROM events ORDER BY datetime DESC LIMIT 100")
 	if err != nil {
 		errStr = "ERROR: GetAllEvents: DB Select events issue"
-		log.Println(errStr)
-		log.Println(err)
-		return errStr
+		log.Printf("%s: %v\n", errStr, err)
+		return errStr, err
 	}
 	defer results.Close()
 	numEvents := 0
@@ -93,39 +93,45 @@ func GetAllEvents() string {
 		err = results.Scan(&events.EventId, &events.Service, &events.Event, &events.EventType, &events.Datetime)
 		if err != nil {
 			errStr = "ERROR: DB Select events result issue"
-			log.Println(errStr)
-			log.Println(err)
-			return errStr
+			log.Printf("%s: %v\n", errStr, err)
+			return errStr, nil
 		}
 		eventsList = append(eventsList, events)
 		numEvents += 1
 	}
 	jsonData, err := json.Marshal(eventsList)
 	if err != nil {
-		return "ERROR: GetAllEvents: json.Marshal"
+		return "ERROR: GetAllEvents: json.Marshal", err
 	}
-	return string(jsonData)
+	return string(jsonData), nil
 }
 
-func checkCount(rows *sql.Rows) (count int) {
+func checkCount(rows *sql.Rows) int {
+	count := 0
 	for rows.Next() {
 		err := rows.Scan(&count)
 		checkErr(err)
+		return count
 	}
 	return count
 }
 
-func InsertEvent(service string, event string, eventType string, datetime string) string {
+func InsertEvent(service string, event string, eventType string, datetime string) (string, error) {
 	log.Println("INFO: InsertEvent")
 	var errStr = ""
 	query := "SELECT COUNT(*) as count FROM events WHERE service = ? and event = ? and event_type = ? and datetime = ?"
 	results, err := db.Query(query, service, event, eventType, datetime)
 	log.Println("INFO:", results)
-	numRows := checkCount(results)
+	numRows := 0
+	if err != nil {
+		return "ERROR: count events issue", err
+	} else {
+		numRows = checkCount(results)
+	}
 	log.Println("INFO: numRows:", numRows)
 	if numRows != 0 {
 		log.Println("INFO: found duplicate not inserting")
-		return "duplicate"
+		return "duplicate", nil
 	}
 
 	query = "INSERT INTO events (event_id, service, event, event_type, datetime) values (UUID(), ?, ?, ?, ?)"
@@ -133,26 +139,24 @@ func InsertEvent(service string, event string, eventType string, datetime string
 
 	if err != nil {
 		errStr = "ERROR: InsertEvent: DB Insert events issue"
-		log.Println(errStr)
-		log.Println(err)
-		return errStr
+		log.Printf("%s: %v\n", errStr, err)
+		return errStr, err
 	}
 	print(result)
 	log.Println("INFO: result: ", result)
-	return "ok"
+	return "ok", nil
 }
 
-func InsertEventNow(service string, event string, eventType string) string {
+func InsertEventNow(service string, event string, eventType string) (string, error) {
 	log.Println("INFO: InsertEventNow")
 	var errStr = ""
 	query := "INSERT INTO events (event_id, service, event, event_type, datetime) values (UUID(), ?, ?, ?, NOW())"
 	result, err := db.Exec(query, service, event, eventType)
 	if err != nil {
 		errStr = "ERROR: InsertEventsNow: DB Insert events issue"
-		log.Println(errStr)
-		log.Println(err)
-		return errStr
+		log.Printf("%s: %v\n", errStr, err)
+		return errStr, err
 	}
 	log.Println("INFO: result: ", result)
-	return "ok"
+	return "ok", nil
 }

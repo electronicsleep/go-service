@@ -102,8 +102,11 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 
 func eventsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("INFO: eventsHandler endpoint")
-	dbStatusResponse := ""
-	dbStatusResponse = GetAllEvents()
+	dbStatusResponse, err := GetAllEvents()
+	if err != nil {
+		http.Error(w, dbStatusResponse, http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	b := []byte(dbStatusResponse)
 	w.Write(b)
@@ -156,9 +159,13 @@ func eventAddHandler(w http.ResponseWriter, r *http.Request) {
 
 		insertResult := ""
 		if e.Datetime == "" {
-			insertResult = InsertEventNow(e.Service, e.Event, e.EventType)
+			insertResult, err = InsertEventNow(e.Service, e.Event, e.EventType)
 		} else {
-			insertResult = InsertEvent(e.Service, e.Event, e.EventType, e.Datetime)
+			insertResult, err = InsertEvent(e.Service, e.Event, e.EventType, e.Datetime)
+		}
+		if err != nil {
+			http.Error(w, insertResult, http.StatusInternalServerError)
+			return
 		}
 		fmt.Fprintf(w, "INFO: Add Event: %s Result: %s", e.Event, insertResult)
 		message = "Add Event: " + serviceMessage + " Event " + e.Event + dateTimeMessage
