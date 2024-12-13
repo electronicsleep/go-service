@@ -113,7 +113,7 @@ func eventAddHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("INFO: Endpoint eventAddHandler")
 	if r.Method != "POST" {
 		message := "Add event requires POST method"
-		fmt.Fprintf(w, message)
+		fmt.Fprintf(w, "%s\n", message)
 		log.Println("INFO" + message)
 		return
 	}
