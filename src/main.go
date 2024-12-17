@@ -8,14 +8,16 @@ import (
 	"os"
 )
 
-type Profile struct {
-	Name    string   `json:"name"`
-	Hobbies []string `json:"hobbies"`
+type Usage struct {
+	Name string   `json:"name"`
+	Type []string `json:"usage"`
 }
 
 type Health struct {
 	Status string `json:"status"`
 }
+
+const healthCheckDB = false
 
 var userDatasource = ""
 var writerDatasource = ""
@@ -70,13 +72,13 @@ func checkError(info string, err error) {
 	}
 }
 
-func apiHandler(w http.ResponseWriter, r *http.Request) {
-	profile := Profile{Name: "Chris", Hobbies: []string{"Bass", "Programming"}}
-	log.Println("INFO: api ", profile)
+func infoHandler(w http.ResponseWriter, r *http.Request) {
+	usage := Usage{Name: "go-service", Type: []string{"DevOps", "SRE", "Infra"}}
+	log.Println("INFO: usage: ", usage)
 
-	jsonData, err := json.Marshal(profile)
+	jsonData, err := json.Marshal(usage)
 	if err != nil {
-		log.Println("ERROR: Marshal apiHandler")
+		log.Println("ERROR: Marshal InfoHandler")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -86,23 +88,42 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	health := Health{Status: "up"}
-	log.Println("INFO: status ", health)
 
+	// Option to fail health check if DB is not accessable
+	if healthCheckDB {
+		dbStatusResponse, err := GetEvents("")
+		if err != nil {
+			log.Println("ERROR: DB Connect issue")
+			http.Error(w, dbStatusResponse, http.StatusInternalServerError)
+			return
+		}
+	}
+
+	health := Health{Status: "up"}
 	jsonData, err := json.Marshal(health)
 	if err != nil {
-		log.Println("ERROR: Marshal healthHandler")
+		log.Println("ERROR: Marshal HealthHandler")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	log.Println("INFO: HealthHandler ", health)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonData)
 }
 
 func eventsHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("INFO: eventsHandler endpoint")
-	dbStatusResponse, err := GetAllEvents()
+	log.Println("INFO: EventsHandler endpoint")
+	query := r.URL.Query()
+	service := query.Get("service")
+	dbStatusResponse := ""
+	var err error
+	log.Println("INFO: service:", service)
+	if service != "" {
+		dbStatusResponse, err = GetEvents(service)
+	} else {
+		dbStatusResponse, err = GetEvents("")
+	}
 	if err != nil {
 		http.Error(w, dbStatusResponse, http.StatusInternalServerError)
 		return
@@ -113,7 +134,7 @@ func eventsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func eventAddHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("INFO: Endpoint eventAddHandler")
+	log.Println("INFO: Endpoint EventAddHandler")
 	if r.Method != "POST" {
 		message := "Add event requires POST method"
 		fmt.Fprintf(w, "%s\n", message)
@@ -129,11 +150,11 @@ func eventAddHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	path := r.URL.Path
-	log.Println("INFO: path: " + path)
+	log.Println("INFO: Path:", path)
 	decoder := json.NewDecoder(r.Body)
 	var e Event
 	err := decoder.Decode(&e)
-	log.Println("INFO: event ", e)
+	log.Println("INFO: Event:", e)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -168,14 +189,14 @@ func eventAddHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fmt.Fprintf(w, "INFO: Add Event: %s Result: %s", e.Event, insertResult)
-		message = "Add Event: " + serviceMessage + " Event " + e.Event + dateTimeMessage
+		message = "AddEvent: " + serviceMessage + " Event: " + e.Event + dateTimeMessage
 		log.Println("INFO:", message)
 	}
 }
 
 func statusHandler(w http.ResponseWriter, r *http.Request) {
 	healthStatusResponse := "ok"
-	log.Println("INFO: statusHandler")
+	log.Println("INFO: StatusHandler")
 	fmt.Fprintf(w, "go-service: %s", healthStatusResponse)
 }
 
@@ -189,8 +210,8 @@ func main() {
 	eventAdd := http.HandlerFunc(eventAddHandler)
 	http.Handle("/add", eventAdd)
 
-	api := http.HandlerFunc(apiHandler)
-	http.Handle("/api", api)
+	info := http.HandlerFunc(infoHandler)
+	http.Handle("/info", info)
 
 	status := http.HandlerFunc(statusHandler)
 	http.Handle("/status", status)

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 )
 
 type EventsTable struct {
@@ -68,20 +69,26 @@ func OpenDBRoConn(userDatasource string, readerDatasource string, datasourcePass
 	} else {
 		err := dbRo.Ping()
 		if err != nil {
-			log.Println("ERROR: dbRo.Ping failed:", err)
+			log.Println("ERROR: DBRo Ping failed:", err)
 		}
 		log.Println("INFO: Opened DBRo Connection")
 		return true
 	}
 }
 
-func GetAllEvents() (string, error) {
-	log.Println("INFO: GetAllEvents")
+func GetEvents(service string) (string, error) {
+	log.Println("INFO: GetEvents")
 	var errStr = ""
-
-	results, err := dbRo.Query("SELECT * FROM events ORDER BY datetime DESC LIMIT 100")
+	var err error
+	var results *sql.Rows
+	if service == "" {
+		results, err = dbRo.Query("SELECT * FROM events ORDER BY datetime DESC LIMIT 100")
+	} else {
+		query := "SELECT * FROM events WHERE service = ? ORDER BY datetime DESC LIMIT 100"
+		results, err = dbRo.Query(query, service)
+	}
 	if err != nil {
-		errStr = "ERROR: GetAllEvents: DB Select events issue"
+		errStr = "ERROR: GetEvents: DB Select events issue"
 		log.Printf("%s: %v\n", errStr, err)
 		return errStr, err
 	}
@@ -92,7 +99,7 @@ func GetAllEvents() (string, error) {
 	for results.Next() {
 		err = results.Scan(&events.EventId, &events.Service, &events.Event, &events.EventType, &events.Datetime)
 		if err != nil {
-			errStr = "ERROR: DB Select events result issue"
+			errStr = "ERROR: GetEvents: DB Select events result issue"
 			log.Printf("%s: %v\n", errStr, err)
 			return errStr, nil
 		}
@@ -101,7 +108,7 @@ func GetAllEvents() (string, error) {
 	}
 	jsonData, err := json.Marshal(eventsList)
 	if err != nil {
-		return "ERROR: GetAllEvents: json.Marshal", err
+		return "ERROR: GetEvents: json.Marshal", err
 	}
 	return string(jsonData), nil
 }
@@ -119,44 +126,81 @@ func checkCount(rows *sql.Rows) int {
 func InsertEvent(service string, event string, eventType string, datetime string) (string, error) {
 	log.Println("INFO: InsertEvent")
 	var errStr = ""
-	query := "SELECT COUNT(*) as count FROM events WHERE service = ? and event = ? and event_type = ? and datetime = ?"
-	results, err := db.Query(query, service, event, eventType, datetime)
-	log.Println("INFO:", results)
+	checkQuery := "SELECT COUNT(*) as count FROM events WHERE service = ? and event = ? and event_type = ? and datetime = ?"
+	checkResults, err := db.Query(checkQuery, service, event, eventType, datetime)
 	numRows := 0
 	if err != nil {
 		return "ERROR: count events issue", err
 	} else {
-		numRows = checkCount(results)
+		numRows = checkCount(checkResults)
 	}
-	log.Println("INFO: numRows:", numRows)
+	defer checkResults.Close()
+
+	log.Println("INFO: NumRows:", numRows)
 	if numRows != 0 {
-		log.Println("INFO: found duplicate not inserting")
+		log.Println("INFO: FoundDuplicate")
 		return "duplicate", nil
 	}
 
-	query = "INSERT INTO events (event_id, service, event, event_type, datetime) values (UUID(), ?, ?, ?, ?)"
-	result, err := db.Exec(query, service, event, eventType, datetime)
+	uuid := uuid.New()
+
+	query := "INSERT INTO events (event_id, service, event, event_type, datetime) values (?, ?, ?, ?, ?)"
+	result, err := db.Exec(query, uuid, service, event, eventType, datetime)
 
 	if err != nil {
 		errStr = "ERROR: InsertEvent: DB Insert events issue"
 		log.Printf("%s: %v\n", errStr, err)
 		return errStr, err
 	}
-	print(result)
-	log.Println("INFO: result: ", result)
+	rows, err := result.RowsAffected()
+	if err != nil {
+		errStr = "ERROR: InsertEventsNow: DB last insert id issue"
+		log.Printf("%s: %v\n", errStr, err)
+	}
+	log.Println("INFO: insertResult: Rows:", rows)
 	return "ok", nil
 }
 
 func InsertEventNow(service string, event string, eventType string) (string, error) {
 	log.Println("INFO: InsertEventNow")
+
 	var errStr = ""
-	query := "INSERT INTO events (event_id, service, event, event_type, datetime) values (UUID(), ?, ?, ?, NOW())"
-	result, err := db.Exec(query, service, event, eventType)
+	checkQuery := "SELECT COUNT(*) as count FROM events WHERE service = ? and event = ? and event_type = ? and datetime = NOW()"
+	checkResults, err := db.Query(checkQuery, service, event, eventType)
+	numRows := 0
+	if err != nil {
+		return "ERROR: count events issue", err
+	} else {
+		numRows = checkCount(checkResults)
+	}
+	defer checkResults.Close()
+
+	log.Println("INFO: NumRows:", numRows)
+	if numRows != 0 {
+		log.Println("INFO: FoundDuplicate")
+		return "duplicate", nil
+	}
+
+	uuid := uuid.New()
+
+	t := time.Now()
+	tf := t.Format("2006/01/02 15:04:05")
+	log.Println("INFO: TIME:", tf)
+
+	query := "INSERT INTO events (event_id, service, event, event_type, datetime) values (?, ?, ?, ?, ?)"
+	result, err := db.Exec(query, uuid, service, event, eventType, tf)
 	if err != nil {
 		errStr = "ERROR: InsertEventsNow: DB Insert events issue"
 		log.Printf("%s: %v\n", errStr, err)
 		return errStr, err
 	}
-	log.Println("INFO: result: ", result)
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		errStr = "ERROR: InsertEventsNow: DB last insert id issue"
+		log.Printf("%s: %v\n", errStr, err)
+	}
+
+	log.Println("INFO: InsertResult: Rows:", rows)
 	return "ok", nil
 }
