@@ -9,8 +9,8 @@ import (
 )
 
 type Usage struct {
-	Name string   `json:"name"`
-	Type []string `json:"usage"`
+	Name  string   `json:"name"`
+	Usage []string `json:"usage"`
 }
 
 type Health struct {
@@ -73,7 +73,7 @@ func checkError(info string, err error) {
 }
 
 func infoHandler(w http.ResponseWriter, r *http.Request) {
-	usage := Usage{Name: "go-service", Type: []string{"DevOps", "SRE", "Infra"}}
+	usage := Usage{Name: "go-service", Usage: []string{"DevOps", "SRE", "Infra"}}
 	log.Println("INFO: usage: ", usage)
 
 	jsonData, err := json.Marshal(usage)
@@ -135,10 +135,12 @@ func eventsHandler(w http.ResponseWriter, r *http.Request) {
 
 func eventAddHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("INFO: Endpoint EventAddHandler")
+	path := r.URL.Path
+	log.Println("INFO: Path:", path)
 	if r.Method != "POST" {
-		message := "Add event requires POST method"
-		fmt.Fprintf(w, "%s\n", message)
-		log.Println("INFO" + message)
+		msg := "BadRequest 4xx " + path + "  event requires POST method"
+		log.Println("INFO:", msg)
+		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
 
@@ -149,32 +151,35 @@ func eventAddHandler(w http.ResponseWriter, r *http.Request) {
 		Datetime  string
 	}
 
-	path := r.URL.Path
-	log.Println("INFO: Path:", path)
 	decoder := json.NewDecoder(r.Body)
 	var e Event
 	err := decoder.Decode(&e)
 	log.Println("INFO: Event:", e)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		msg := "BadRequest 4xx " + path + " decode error"
+		log.Println("INFO:", msg)
+		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
-	message := ""
 
 	if e.Event == "" {
-		fmt.Fprintf(w, "Event blank")
-		log.Println("INFO: Event blank")
+		msg := "BadRequest 4xx " + path + " event empty"
+		log.Println("INFO:", msg)
+		http.Error(w, "Event Empty", http.StatusBadRequest)
+		return
 	} else {
 		serviceMessage := ""
 		dateTimeMessage := ""
 		if e.Service == "" {
-			e.Service = "na"
+			e.Service = "None"
 		} else {
 			serviceMessage = "Service: " + e.Service
 		}
 
 		if e.EventType == "" {
-			fmt.Fprintf(w, "ERROR: type not sent")
+			msg := "BadRequest 4xx " + path + " eventType empty"
+			log.Println("INFO:", msg)
+			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
 
@@ -188,9 +193,8 @@ func eventAddHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, insertResult, http.StatusInternalServerError)
 			return
 		}
-		fmt.Fprintf(w, "INFO: Add Event: %s Result: %s", e.Event, insertResult)
-		message = "AddEvent: " + serviceMessage + " Event: " + e.Event + dateTimeMessage
-		log.Println("INFO:", message)
+		msg := "AddEvent: " + serviceMessage + " Event: " + e.Event + dateTimeMessage
+		log.Println("INFO:", msg)
 	}
 }
 
