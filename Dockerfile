@@ -1,10 +1,8 @@
-FROM alpine:latest
+FROM ubuntu:latest
 
-RUN mkdir -p /usr/src/app
+RUN apt-get update && apt-get upgrade
+ADD src/go-service /usr/local/bin
 
-RUN apk update && apk upgrade
-ADD src/go-service /usr/src/app
-
-WORKDIR /usr/src/app
+WORKDIR /usr/local/bin
 EXPOSE 8081
 CMD ["./go-service"]
