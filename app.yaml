@@ -31,10 +31,10 @@ spec:
     spec:
       containers:
         - name: go-service
-          image: go-service:latest
-          imagePullPolicy: IfNotPresent
+          image: localhost:32000/go-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8081
           env:
-            - name: NAME 
-              value: "go-service"
+            - name: SERVICE
+              value: go-service

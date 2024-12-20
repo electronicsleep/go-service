@@ -165,7 +165,7 @@ func eventAddHandler(w http.ResponseWriter, r *http.Request) {
 	if e.Event == "" {
 		msg := "BadRequest 4xx " + path + " event empty"
 		log.Println("INFO:", msg)
-		http.Error(w, "Event Empty", http.StatusBadRequest)
+		http.Error(w, msg, http.StatusBadRequest)
 		return
 	} else {
 		serviceMessage := ""
