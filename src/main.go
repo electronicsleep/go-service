@@ -145,19 +145,41 @@ func eventAddHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type Event struct {
-		Event     string
-		Service   string
-		EventType string
-		Datetime  string
+		ApiKey    string `json:"api_key"`
+		Event     string `json:"event"`
+		Service   string `json:"service"`
+		EventType string `json:"event_type"`
+		DateTime  string `json:"datetime"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
 	var e Event
 	err := decoder.Decode(&e)
 	log.Println("INFO: Event:", e)
+	log.Println("INFO: Event: api_key", e.ApiKey)
+	//var valid_api_key = "test123"
+	validApiKeys := []string{"test", "test123"}
+	var foundValidApiKey bool = false
+	for index, validApiKey := range validApiKeys {
+		if e.ApiKey == validApiKey {
+			log.Println(index)
+			log.Println("INFO: valid api_key", e.ApiKey, validApiKey)
+			foundValidApiKey = true
+			break
+		} else {
+			log.Println("INFO: invalid api_key", e.ApiKey, validApiKey)
+		}
+	}
+	if !foundValidApiKey {
+		log.Println("ERROR: invalid api_key")
+		msg := "BadRequest 4xx " + path + " invalid api_key"
+		log.Println("ERROR:", msg)
+		http.Error(w, msg, http.StatusBadRequest)
+		return
+	}
 	if err != nil {
-		msg := "BadRequest 4xx " + path + " decode error"
-		log.Println("INFO:", msg)
+		msg := "BadRequest 4xx " + path + " decode error " + err.Error()
+		log.Println("ERROR:", msg)
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
@@ -184,10 +206,10 @@ func eventAddHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		insertResult := ""
-		if e.Datetime == "" {
+		if e.DateTime == "" {
 			insertResult, err = InsertEventNow(e.Service, e.Event, e.EventType)
 		} else {
-			insertResult, err = InsertEvent(e.Service, e.Event, e.EventType, e.Datetime)
+			insertResult, err = InsertEvent(e.Service, e.Event, e.EventType, e.DateTime)
 		}
 		if err != nil {
 			http.Error(w, insertResult, http.StatusInternalServerError)
